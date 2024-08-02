@@ -48,21 +48,11 @@ spec:
             - name: refresher
               image: siteworxpro/aws-iam-anywhere
               imagePullPolicy: Always
-              env:
-                - name: NAMESPACE
-                  value: default
-                - name: SECRET
-                  value: aws-credentials
-                - name: ROLE_ARN
-                  value: arn:aws:iam::12345:role/my-role
-                - name: PROFILE_ARN
-                  value: arn:aws:rolesanywhere:us-east-1:12345:profile/bdf23662-32fe-482f-98f4-f10ba6afacd8
-                - name: TRUSTED_ANCHOR_ARN
-                  value: arn:aws:rolesanywhere:us-east-1:3123451:trust-anchor/23692607-2a1e-468d-80d4-dc78ce9d9b1a
-                - name: CERTIFICATE
-                  value: LS0...S0K
-                - name: PRIVATE_KEY
-                  value: LS0t...S0K
+              envFrom:
+                - configMapRef:
+                    name: aws-iam-anywhere
+                - secretRef:
+                    name: aws-iam-anywhere
   schedule: 00 * * * *
 ---
 apiVersion: v1
@@ -104,6 +94,27 @@ subjects:
   - kind: ServiceAccount
     name: aws-iam-anywhere-refresher
     namespace: default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-iam-anywhere
+data:
+  NAMESPACE: "default"
+  SECRET: "aws-credentials"
+  ROLE_ARN: "arn:aws:iam::12345:role/my-role"
+  PROFILE_ARN: "arn:aws:rolesanywhere:us-east-1:12345:profile/bdf23662-32fe-482f-98f4-f10ba6afacd8"
+  TRUSTED_ANCHOR_ARN: "arn:aws:rolesanywhere:us-east-1:12345:trust-anchor/23692607-2a1e-468d-80d4-dc78ce9d9b1a"
+  RESTART_DEPLOYMENTS: "1"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-iam-anywhere
+stringData:
+  CERTIFICATE: "LS0t...S0tCg=="
+  PRIVATE_KEY: "LS0t...S0K"
+
 ```
 
 resulting secret
