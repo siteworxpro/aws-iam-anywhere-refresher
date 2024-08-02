@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"github.com/aws/rolesanywhere-credential-helper/rolesanywhere"
+	v1 "k8s.io/api/core/v1"
+	v1m "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"net/http"
 	"runtime"
@@ -125,4 +127,21 @@ func GenerateCredentials(opts *CredentialsOpts, signer Signer, signatureAlgorith
 		Expiration:      *credentials.Expiration,
 	}
 	return credentialProcessOutput, nil
+}
+
+func (credentials CredentialProcessOutput) ToSecret(secretName string) *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: v1m.ObjectMeta{
+			Name: secretName,
+			Labels: map[string]string{
+				"managed-by": "aws-iam-anywhere-refresher",
+			},
+		},
+		StringData: map[string]string{
+			"AWS_ACCESS_KEY_ID":     credentials.AccessKeyId,
+			"AWS_SECRET_ACCESS_KEY": credentials.SecretAccessKey,
+			"AWS_SESSION_TOKEN":     credentials.SessionToken,
+		},
+	}
+
 }
