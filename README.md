@@ -124,8 +124,7 @@ data:
 
 ## Restarting Deployments
 
-You can optionally restart your deployments if needed. If this isn't needed you can exclude the permissions in the role
-above. 
+You can optionally restart your deployments if needed. Set the `RESTART_DEPLOYMENTS` environment variable to `true`. If this isn't needed you can exclude the permission in the role above and the variable.
 
 The process will list all deployments with the label `iam-role-type=aws-iam-anywhere` and restart them.
 
