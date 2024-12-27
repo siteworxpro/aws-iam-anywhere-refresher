@@ -1,13 +1,13 @@
 module git.s.int/rrise/aws-iam-anywhere-refresher
 
-go 1.23.1
+go 1.23.4
 
 require (
 	git.s.int/packages/go/utilities v1.2.2
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/aws/rolesanywhere-credential-helper v1.2.0
 	github.com/charmbracelet/log v0.4.0
-	golang.org/x/crypto v0.27.0
+	golang.org/x/crypto v0.31.0
 	k8s.io/api v0.31.1
 	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v0.31.1
@@ -47,9 +47,9 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/term v0.24.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
