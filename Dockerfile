@@ -1,4 +1,4 @@
-FROM siteworxpro/golang:1.23.4 AS build
+FROM siteworxpro/golang:1.24.0 AS build
 
 ENV GOPRIVATE=git.s.int
 ENV GOPROXY=direct
