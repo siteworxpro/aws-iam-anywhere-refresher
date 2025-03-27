@@ -13,7 +13,7 @@ This image runs in a kubernetes cronjob and will create and save new IAM credent
 
 ## Docker hub and repo
 
-- [docker image](https://hub.docker.com/repository/docker/siteworxpro/aws-iam-anywhere/general)
+- [container image](https://hub.docker.com/repository/docker/siteworxpro/aws-iam-anywhere/general)
 - [github.com](https://github.com/siteworxpro/aws-iam-anywhere-refresher)
 
 
