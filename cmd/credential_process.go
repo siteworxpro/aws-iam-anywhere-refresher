@@ -1,6 +1,6 @@
 package cmd
 
-import helper "git.s.int/rrise/aws-iam-anywhere-refresher/aws_signing_helper"
+import helper "gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher/aws_signing_helper"
 
 func Run(opts *helper.CredentialsOpts) (*helper.CredentialProcessOutput, error) {
 	signer, signingAlgorithm, err := helper.GetSigner(opts)

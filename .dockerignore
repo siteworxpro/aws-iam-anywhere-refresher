@@ -1,1 +1,5 @@
 .idea/
+.gitea/
+aws-iam-anywhere-refresher
+LICENSE
+README.md

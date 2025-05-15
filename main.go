@@ -1,11 +1,10 @@
 package main
 
 import (
-	"encoding/base64"
-	helper "git.s.int/rrise/aws-iam-anywhere-refresher/aws_signing_helper"
-	"git.s.int/rrise/aws-iam-anywhere-refresher/cmd"
-	appConfig "git.s.int/rrise/aws-iam-anywhere-refresher/config"
-	"git.s.int/rrise/aws-iam-anywhere-refresher/kube_client"
+	helper "gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher/aws_signing_helper"
+	"gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher/cmd"
+	appConfig "gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher/config"
+	"gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher/kube_client"
 	"github.com/charmbracelet/log"
 	"os"
 	"time"
@@ -18,39 +17,25 @@ func main() {
 		ReportTimestamp: true,
 		TimeFormat:      time.RFC3339,
 	})
+
 	l.Info("Starting credentials refresh")
-
-	client, err := kube_client.NewKubeClient()
-	if err != nil {
-		l.Error("Failed to create kubernetes client", "error", err)
-
-		os.Exit(1)
-	}
 
 	c := appConfig.NewConfig()
 
-	privateKey, err := base64.StdEncoding.DecodeString(c.PrivateKey())
+	err := c.Valid()
 	if err != nil {
-		l.Error("Failed to decode private key", "error", err)
-		os.Exit(1)
-	}
-
-	certificate, err := base64.StdEncoding.DecodeString(c.Certificate())
-	if err != nil {
-		l.Error("Failed to decode certificate", "error", err)
+		l.Error("Invalid configuration", "error", err)
 		os.Exit(1)
 	}
 
 	credentials, err := cmd.Run(&helper.CredentialsOpts{
-		PrivateKeyId:  string(privateKey),
-		CertificateId: string(certificate),
-		CertIdentifier: helper.CertIdentifier{
-			SystemStoreName: "MY",
-		},
-		RoleArn:           c.RoleArn(),
-		ProfileArnStr:     c.ProfileArn(),
-		TrustAnchorArnStr: c.TrustedAnchor(),
-		SessionDuration:   int(c.SessionDuration()),
+		PrivateKeyId:        c.PrivateKey(),
+		CertificateId:       c.Certificate(),
+		CertificateBundleId: c.BundleId(),
+		RoleArn:             c.RoleArn(),
+		ProfileArnStr:       c.ProfileArn(),
+		TrustAnchorArnStr:   c.TrustedAnchor(),
+		SessionDuration:     int(c.SessionDuration()),
 	})
 
 	if err != nil {
@@ -60,6 +45,22 @@ func main() {
 	}
 
 	l.Info("Credentials refreshed")
+
+	if c.FetchOnly() {
+		l.Info("Fetch only mode, skipping secret update")
+
+		l.Info("AccessKeyId", "access-key-id", credentials.AccessKeyId)
+		l.Info("SecretAccessKey", "secret-access-key", credentials.SecretAccessKey)
+		l.Info("SessionToken", "session-token", credentials.SessionToken)
+		os.Exit(0)
+	}
+
+	client, err := kube_client.NewKubeClient()
+	if err != nil {
+		l.Error("Failed to create kubernetes client", "error", err)
+
+		os.Exit(1)
+	}
 
 	_, err = client.GetSecret(c.Namespace(), c.Secret())
 	if err != nil {

@@ -28,6 +28,7 @@ This image runs in a kubernetes cronjob and will create and save new IAM credent
 - `TRUSTED_ANCHOR_ARN` ***required*** : the trusted anchor arn
 - `PRIVATE_KEY` ***required*** : iam private key base64 encoded
 - `CERTIFICATE` ***required*** : iam certificate base64 encoded
+- `CA_CHAIN` : the certificate chain bundle if needed
 
 ```yaml
 

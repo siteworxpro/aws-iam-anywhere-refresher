@@ -847,7 +847,7 @@ func TestStoreValidToken(t *testing.T) {
 		t.Log("unable to create test http request")
 		t.Fail()
 	}
-	httpRequest.Header.Add(EC2_METADATA_TOKEN_HEADER, token)
+	httpRequest.Header.Add(Ec2MetadataTokenHeader, token)
 
 	err = CheckValidToken(nil, httpRequest)
 	if err != nil {

@@ -18,18 +18,19 @@ type FileSystemSigner struct {
 	certPath       string
 	isPkcs12       bool
 	privateKeyPath string
+	pkcs8Password  string
 }
 
 func (fileSystemSigner *FileSystemSigner) Public() crypto.PublicKey {
 	privateKey, _, _ := fileSystemSigner.readCertFiles()
 	{
-		privateKey, ok := privateKey.(ecdsa.PrivateKey)
+		privateKey, ok := privateKey.(*ecdsa.PrivateKey)
 		if ok {
 			return &privateKey.PublicKey
 		}
 	}
 	{
-		privateKey, ok := privateKey.(rsa.PrivateKey)
+		privateKey, ok := privateKey.(*rsa.PrivateKey)
 		if ok {
 			return &privateKey.PublicKey
 		}
@@ -56,17 +57,17 @@ func (fileSystemSigner *FileSystemSigner) Sign(rand io.Reader, digest []byte, op
 		return nil, ErrUnsupportedHash
 	}
 
-	ecdsaPrivateKey, ok := privateKey.(ecdsa.PrivateKey)
+	ecdsaPrivateKey, ok := privateKey.(*ecdsa.PrivateKey)
 	if ok {
-		sig, err := ecdsa.SignASN1(rand, &ecdsaPrivateKey, hash[:])
+		sig, err := ecdsa.SignASN1(rand, ecdsaPrivateKey, hash[:])
 		if err == nil {
 			return sig, nil
 		}
 	}
 
-	rsaPrivateKey, ok := privateKey.(rsa.PrivateKey)
+	rsaPrivateKey, ok := privateKey.(*rsa.PrivateKey)
 	if ok {
-		sig, err := rsa.SignPKCS1v15(rand, &rsaPrivateKey, opts.HashFunc(), hash[:])
+		sig, err := rsa.SignPKCS1v15(rand, rsaPrivateKey, opts.HashFunc(), hash[:])
 		if err == nil {
 			return sig, nil
 		}
@@ -87,17 +88,17 @@ func (fileSystemSigner *FileSystemSigner) CertificateChain() ([]*x509.Certificat
 }
 
 // GetFileSystemSigner returns a FileSystemSigner, that signs a payload using the private key passed in
-func GetFileSystemSigner(privateKeyPath string, certPath string, bundlePath string, isPkcs12 bool) (signer Signer, signingAlgorithm string, err error) {
-	fsSigner := &FileSystemSigner{bundlePath: bundlePath, certPath: certPath, isPkcs12: isPkcs12, privateKeyPath: privateKeyPath}
+func GetFileSystemSigner(privateKeyPath string, certPath string, bundlePath string, isPkcs12 bool, pkcs8Password string) (signer Signer, signingAlgorithm string, err error) {
+	fsSigner := &FileSystemSigner{bundlePath: bundlePath, certPath: certPath, isPkcs12: isPkcs12, privateKeyPath: privateKeyPath, pkcs8Password: pkcs8Password}
 	privateKey, _, _ := fsSigner.readCertFiles()
 	// Find the signing algorithm
-	_, isRsaKey := privateKey.(rsa.PrivateKey)
+	_, isRsaKey := privateKey.(*rsa.PrivateKey)
 	if isRsaKey {
-		signingAlgorithm = aws4_x509_rsa_sha256
+		signingAlgorithm = aws4X509RsaSha256
 	}
-	_, isEcKey := privateKey.(ecdsa.PrivateKey)
+	_, isEcKey := privateKey.(*ecdsa.PrivateKey)
 	if isEcKey {
-		signingAlgorithm = aws4_x509_ecdsa_sha256
+		signingAlgorithm = aws4X509EcdsaSha256
 	}
 	if signingAlgorithm == "" {
 		log.Println("unsupported algorithm")
@@ -111,22 +112,48 @@ func (fileSystemSigner *FileSystemSigner) readCertFiles() (crypto.PrivateKey, *x
 	if fileSystemSigner.isPkcs12 {
 		chain, privateKey, err := ReadPKCS12Data(fileSystemSigner.certPath)
 		if err != nil {
-			log.Printf("Failed to read PKCS12 certificate: %s\n", err)
+			log.Printf("failed to read PKCS12 certificate: %s\n", err)
 			os.Exit(1)
 		}
 		return privateKey, chain[0], chain
 	} else {
-		privateKey, err := ReadPrivateKeyData(fileSystemSigner.privateKeyPath)
-		if err != nil {
-			log.Printf("Failed to read private key: %s\n", err)
-			os.Exit(1)
+		var privateKey crypto.PrivateKey
+		var err error
+		if len(fileSystemSigner.pkcs8Password) > 0 || isPKCS8EncryptedBlockType(fileSystemSigner.privateKeyPath) {
+			passwordPromptInput := PasswordPromptProps{
+				InitialPassword: fileSystemSigner.pkcs8Password,
+				NoPassword:      false,
+				CheckPassword: func(password string) (interface{}, error) {
+					return ReadPrivateKeyData(fileSystemSigner.privateKeyPath, password)
+				},
+				IncorrectPasswordMsg:               "incorrect PKCS#8 private key password",
+				Prompt:                             "Please enter your PKC8 private key password:",
+				Reprompt:                           "Incorrect PKCS#8 private key password. Please try again:",
+				ParseErrMsg:                        "unable to read your PKCS#8 private key password",
+				CheckPasswordAuthorizationErrorMsg: "unable to parse private key",
+			}
+			password, signingPrivKey, err := PasswordPrompt(passwordPromptInput)
+			if err != nil {
+				log.Printf("failed to read private key: %s\n", err)
+				os.Exit(1)
+			}
+
+			fileSystemSigner.pkcs8Password = password
+			privateKey, _ = signingPrivKey.(crypto.PrivateKey)
+		} else {
+			privateKey, err = ReadPrivateKeyData(fileSystemSigner.privateKeyPath, "")
+			if err != nil {
+				log.Printf("failed to read private key: %s\n", err)
+				os.Exit(1)
+			}
 		}
+
 		var chain []*x509.Certificate
 		if fileSystemSigner.bundlePath != "" {
 			chain, err = GetCertChain(fileSystemSigner.bundlePath)
 			if err != nil {
 				privateKey = nil
-				log.Printf("Failed to read certificate bundle: %s\n", err)
+				log.Printf("failed to read certificate bundle: %s\n", err)
 				os.Exit(1)
 			}
 		}
@@ -135,7 +162,7 @@ func (fileSystemSigner *FileSystemSigner) readCertFiles() (crypto.PrivateKey, *x
 			_, cert, err = ReadCertificateData(fileSystemSigner.certPath)
 			if err != nil {
 				privateKey = nil
-				log.Printf("Failed to read certificate: %s\n", err)
+				log.Printf("failed to read certificate: %s\n", err)
 				os.Exit(1)
 			}
 		} else if len(chain) > 0 {
