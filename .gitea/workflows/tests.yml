@@ -33,7 +33,7 @@ jobs:
       - name: 🐳 🔨 Build Backend Container
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           context: .
           dockerfile: Dockerfile
           tags: siteworxpro/aws-iam-anywhere:${{ gitea.ref_name }}

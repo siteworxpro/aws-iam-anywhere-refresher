@@ -34,7 +34,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           attests: sbom=true,provenance=true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           context: .
           dockerfile: Dockerfile
@@ -44,7 +44,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           attests: sbom=true,provenance=true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           context: .
           dockerfile: Dockerfile
