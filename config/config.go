@@ -3,7 +3,7 @@ package config
 import (
 	"encoding/base64"
 	"fmt"
-	"git.siteworxpro.com/packages/go/utilities/Env"
+	"gitea.siteworxpro.com/golang-packages/utilities/Env"
 	"regexp"
 )
 

@@ -1,14 +1,15 @@
-FROM siteworxpro/golang:1.24.3 AS build
+FROM siteworxpro/golang:1.24.6 AS build
 
 WORKDIR /app
 
 ADD . .
 
 ENV GOPRIVATE=git.siteworxpro.com
+ENV CGO_ENABLED=0
 
 RUN go mod download && go build -o aws-iam-anywhere-refresher .
 
-FROM ubuntu:latest AS runtime
+FROM siteworxpro/alpine:3.21.4 AS runtime
 
 RUN apt update && apt install -yq ca-certificates curl
 RUN curl -Ls https://siteworxpro.com/hosted/Siteworx+Root+CA.pem -o /usr/local/share/ca-certificates/sw.crt \

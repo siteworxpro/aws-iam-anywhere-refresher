@@ -1,9 +1,9 @@
 module gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher
 
-go 1.24.3
+go 1.24.6
 
 require (
-	git.siteworxpro.com/packages/go/utilities v1.3.0
+	gitea.siteworxpro.com/golang-packages/utilities v1.0.0
 	github.com/aws/aws-sdk-go v1.55.7
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
