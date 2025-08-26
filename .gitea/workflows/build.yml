@@ -33,7 +33,6 @@ jobs:
       - name: 🐳 🔨 Build Backend Container
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64
           provenance: true
           sbom: true
           push: true
@@ -44,7 +43,6 @@ jobs:
       - name: 🐳 🔨 Build Backend Container - Latest Tag
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64
           provenance: true
           sbom: true
           push: true
