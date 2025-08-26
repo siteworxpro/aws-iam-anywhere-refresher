@@ -1,6 +1,6 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
-git.siteworxpro.com/packages/go/utilities v1.3.0 h1:931q66COBJATgIQksPDSZlWMIwENJhhfC/GVf22ER5s=
-git.siteworxpro.com/packages/go/utilities v1.3.0/go.mod h1:iWhICNrMnB03PY9dM9eCNs9uQPEsPwae5pJDG+HHUPI=
+gitea.siteworxpro.com/golang-packages/utilities v1.0.0 h1:f5JqAeZWBn/HBO9k5dzg0Wm91a69uwU5UC2P9ebQ9J0=
+gitea.siteworxpro.com/golang-packages/utilities v1.0.0/go.mod h1:QNqclnfv/BT2D5tbXgsGm7uhhe2Baovi5F6j0pVvMGc=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=

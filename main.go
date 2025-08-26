@@ -1,13 +1,14 @@
 package main
 
 import (
+	"os"
+	"time"
+
 	helper "gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher/aws_signing_helper"
 	"gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher/cmd"
 	appConfig "gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher/config"
 	"gitea.siteworxpro.com/Siteworxpro/aws-iam-anywhere-refresher/kube_client"
 	"github.com/charmbracelet/log"
-	"os"
-	"time"
 )
 
 func main() {
