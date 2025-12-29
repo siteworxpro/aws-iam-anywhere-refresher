@@ -1,4 +1,4 @@
-FROM siteworxpro/golang:1.24.6 AS build
+FROM siteworxpro/golang:1.25.3 AS build
 
 WORKDIR /app
 

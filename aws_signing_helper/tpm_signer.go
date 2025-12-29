@@ -16,8 +16,8 @@ import (
 	"strconv"
 	"strings"
 
-	tpm2 "github.com/google/go-tpm/tpm2"
-	tpmutil "github.com/google/go-tpm/tpmutil"
+	tpm3 "github.com/google/go-tpm/legacy/tpm2"
+	"github.com/google/go-tpm/tpmutil"
 )
 
 type tpm2_TPMPolicy struct {
@@ -48,7 +48,7 @@ type TPMv2Signer struct {
 	cert      *x509.Certificate
 	certChain []*x509.Certificate
 	tpmData   tpm2_TPMKey
-	public    tpm2.Public
+	public    tpm3.Public
 	private   []byte
 	password  string
 	emptyAuth bool
@@ -56,25 +56,25 @@ type TPMv2Signer struct {
 }
 
 func handleIsPersistent(h int) bool {
-	return (h >> 24) == int(tpm2.HandleTypePersistent)
+	return (h >> 24) == int(tpm3.HandleTypePersistent)
 }
 
-var primaryParams = tpm2.Public{
-	Type:       tpm2.AlgECC,
-	NameAlg:    tpm2.AlgSHA256,
-	Attributes: tpm2.FlagUserWithAuth | tpm2.FlagRestricted | tpm2.FlagDecrypt | tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagNoDA | tpm2.FlagSensitiveDataOrigin,
-	ECCParameters: &tpm2.ECCParams{
-		Symmetric: &tpm2.SymScheme{
-			Alg:     tpm2.AlgAES,
+var primaryParams = tpm3.Public{
+	Type:       tpm3.AlgECC,
+	NameAlg:    tpm3.AlgSHA256,
+	Attributes: tpm3.FlagUserWithAuth | tpm3.FlagRestricted | tpm3.FlagDecrypt | tpm3.FlagFixedTPM | tpm3.FlagFixedParent | tpm3.FlagNoDA | tpm3.FlagSensitiveDataOrigin,
+	ECCParameters: &tpm3.ECCParams{
+		Symmetric: &tpm3.SymScheme{
+			Alg:     tpm3.AlgAES,
 			KeyBits: 128,
-			Mode:    tpm2.AlgCFB,
+			Mode:    tpm3.AlgCFB,
 		},
-		Sign: &tpm2.SigScheme{
-			Alg: tpm2.AlgNull,
+		Sign: &tpm3.SigScheme{
+			Alg: tpm3.AlgNull,
 		},
-		CurveID: tpm2.CurveNISTP256,
-		KDF: &tpm2.KDFScheme{
-			Alg: tpm2.AlgNull,
+		CurveID: tpm3.CurveNISTP256,
+		KDF: &tpm3.KDFScheme{
+			Alg: tpm3.AlgNull,
 		},
 	},
 }
@@ -99,13 +99,13 @@ func (tpmv2Signer *TPMv2Signer) Close() {
 	tpmv2Signer.password = ""
 }
 
-func checkCapability(rw io.ReadWriter, algo tpm2.Algorithm) error {
-	descs, _, err := tpm2.GetCapability(rw, tpm2.CapabilityAlgs, 1, uint32(algo))
+func checkCapability(rw io.ReadWriter, algo tpm3.Algorithm) error {
+	descs, _, err := tpm3.GetCapability(rw, tpm3.CapabilityAlgs, 1, uint32(algo))
 	if err != nil {
 		errMsg := fmt.Sprintf("error trying to get capability from TPM for the algorithm (%s)", algo)
 		return errors.New(errMsg)
 	}
-	if tpm2.Algorithm(descs[0].(tpm2.AlgorithmDescription).ID) != algo {
+	if tpm3.Algorithm(descs[0].(tpm3.AlgorithmDescription).ID) != algo {
 		errMsg := fmt.Sprintf("unsupported algorithm (%s) for TPM", algo)
 		return errors.New(errMsg)
 	}
@@ -114,7 +114,7 @@ func checkCapability(rw io.ReadWriter, algo tpm2.Algorithm) error {
 }
 
 // Implements the crypto.Signer interface and signs the passed in digest
-func (tpmv2Signer *TPMv2Signer) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error) {
+func (tpmv2Signer *TPMv2Signer) Sign(_ io.Reader, digest []byte, opts crypto.SignerOpts) (signature []byte, err error) {
 	var (
 		keyHandle tpmutil.Handle
 	)
@@ -131,41 +131,43 @@ func (tpmv2Signer *TPMv2Signer) Sign(rand io.Reader, digest []byte, opts crypto.
 		parentHandle := tpmutil.Handle(tpmv2Signer.tpmData.Parent)
 		if !handleIsPersistent(tpmv2Signer.tpmData.Parent) {
 			// Parent and owner passwords aren't supported currently when creating a primary given a persistent handle for the parent
-			parentHandle, _, err = tpm2.CreatePrimary(rw, tpmutil.Handle(tpmv2Signer.tpmData.Parent), tpm2.PCRSelection{}, "", "", primaryParams)
+			parentHandle, _, err = tpm3.CreatePrimary(rw, tpmutil.Handle(tpmv2Signer.tpmData.Parent), tpm3.PCRSelection{}, "", "", primaryParams)
 			if err != nil {
 				return nil, err
 			}
-			defer tpm2.FlushContext(rw, parentHandle)
+			defer tpm3.FlushContext(rw, parentHandle)
 		}
 
-		keyHandle, _, err = tpm2.Load(rw, parentHandle, "", tpmv2Signer.tpmData.Pubkey[2:], tpmv2Signer.tpmData.Privkey[2:])
+		keyHandle, _, err = tpm3.Load(rw, parentHandle, "", tpmv2Signer.tpmData.Pubkey[2:], tpmv2Signer.tpmData.Privkey[2:])
 		if err != nil {
 			return nil, err
 		}
-		defer tpm2.FlushContext(rw, keyHandle)
+		defer tpm3.FlushContext(rw, keyHandle)
 	}
 
-	var algo tpm2.Algorithm
+	var algo tpm3.Algorithm
 	var shadigest []byte
 
 	switch opts.HashFunc() {
 	case crypto.SHA256:
 		sha256digest := sha256.Sum256(digest)
 		shadigest = sha256digest[:]
-		algo = tpm2.AlgSHA256
+		algo = tpm3.AlgSHA256
 	case crypto.SHA384:
 		sha384digest := sha512.Sum384(digest)
 		shadigest = sha384digest[:]
-		algo = tpm2.AlgSHA384
+		algo = tpm3.AlgSHA384
 	case crypto.SHA512:
 		sha512digest := sha512.Sum512(digest)
 		shadigest = sha512digest[:]
-		algo = tpm2.AlgSHA512
+		algo = tpm3.AlgSHA512
+	default:
+		panic("unhandled default case")
 	}
 
-	if tpmv2Signer.public.Type == tpm2.AlgECC {
+	if tpmv2Signer.public.Type == tpm3.AlgECC {
 		// Check to see that ECDSA is supported for signing
-		err = checkCapability(rw, tpm2.AlgECC)
+		err = checkCapability(rw, tpm3.AlgECC)
 		if err != nil {
 			return nil, err
 		}
@@ -190,13 +192,13 @@ func (tpmv2Signer *TPMv2Signer) Sign(rand io.Reader, digest []byte, opts crypto.
 		}
 		switch byteSize {
 		case sha512.Size:
-			algo = tpm2.AlgSHA512
+			algo = tpm3.AlgSHA512
 		case sha512.Size384:
-			algo = tpm2.AlgSHA384
+			algo = tpm3.AlgSHA384
 		case sha512.Size256:
-			algo = tpm2.AlgSHA256
+			algo = tpm3.AlgSHA256
 		case sha1.Size:
-			algo = tpm2.AlgSHA1
+			algo = tpm3.AlgSHA1
 		default:
 			return nil, errors.New("unsupported curve")
 		}
@@ -210,7 +212,7 @@ func (tpmv2Signer *TPMv2Signer) Sign(rand io.Reader, digest []byte, opts crypto.
 		}
 
 		sig, err := tpmv2Signer.signHelper(rw, keyHandle, shadigest,
-			&tpm2.SigScheme{Alg: tpm2.AlgECDSA, Hash: algo})
+			&tpm3.SigScheme{Alg: tpm3.AlgECDSA, Hash: algo})
 		if err != nil {
 			return nil, err
 		}
@@ -229,13 +231,13 @@ func (tpmv2Signer *TPMv2Signer) Sign(rand io.Reader, digest []byte, opts crypto.
 		}
 
 		// Check to see that RSASSA is supported for signing
-		err = checkCapability(rw, tpm2.AlgRSASSA)
+		err = checkCapability(rw, tpm3.AlgRSASSA)
 		if err != nil {
 			return nil, err
 		}
 
 		sig, err := tpmv2Signer.signHelper(rw, keyHandle, shadigest,
-			&tpm2.SigScheme{Alg: tpm2.AlgRSASSA, Hash: algo})
+			&tpm3.SigScheme{Alg: tpm3.AlgRSASSA, Hash: algo})
 		if err != nil {
 			return nil, err
 		}
@@ -244,12 +246,12 @@ func (tpmv2Signer *TPMv2Signer) Sign(rand io.Reader, digest []byte, opts crypto.
 	return signature, nil
 }
 
-func (tpmv2Signer *TPMv2Signer) signHelper(rw io.ReadWriter, keyHandle tpmutil.Handle, digest tpmutil.U16Bytes, sigScheme *tpm2.SigScheme) (*tpm2.Signature, error) {
+func (tpmv2Signer *TPMv2Signer) signHelper(rw io.ReadWriter, keyHandle tpmutil.Handle, digest tpmutil.U16Bytes, sigScheme *tpm3.SigScheme) (*tpm3.Signature, error) {
 	passwordPromptInput := PasswordPromptProps{
 		InitialPassword: tpmv2Signer.password,
 		NoPassword:      tpmv2Signer.emptyAuth,
 		CheckPassword: func(password string) (interface{}, error) {
-			return tpm2.Sign(rw, keyHandle, password, digest, nil, sigScheme)
+			return tpm3.Sign(rw, keyHandle, password, digest, nil, sigScheme)
 		},
 		IncorrectPasswordMsg:               "incorrect TPM key password",
 		Prompt:                             "Please enter your TPM key password:",
@@ -264,7 +266,7 @@ func (tpmv2Signer *TPMv2Signer) signHelper(rw io.ReadWriter, keyHandle tpmutil.H
 	}
 
 	tpmv2Signer.password = password
-	return sig.(*tpm2.Signature), err
+	return sig.(*tpm3.Signature), err
 }
 
 // Gets the x509.Certificate associated with this TPMv2Signer
@@ -337,7 +339,7 @@ func GetTPMv2Signer(opts GetTPMv2SignerOpts) (signer Signer, signingAlgorithm st
 		emptyAuth        bool
 		tpmData          tpm2_TPMKey
 		handle           tpmutil.Handle
-		public           tpm2.Public
+		public           tpm3.Public
 		private          []byte
 	)
 
@@ -370,7 +372,7 @@ func GetTPMv2Signer(opts GetTPMv2SignerOpts) (signer Signer, signingAlgorithm st
 		}
 		defer rw.Close()
 
-		public, _, _, err = tpm2.ReadPublic(rw, handle)
+		public, _, _, err = tpm3.ReadPublic(rw, handle)
 		if err != nil {
 			return nil, "", err
 		}
@@ -398,10 +400,10 @@ func GetTPMv2Signer(opts GetTPMv2SignerOpts) (signer Signer, signingAlgorithm st
 		}
 
 		if !handleIsPersistent(tpmData.Parent) &&
-			tpmData.Parent != int(tpm2.HandleOwner) &&
-			tpmData.Parent != int(tpm2.HandleNull) &&
-			tpmData.Parent != int(tpm2.HandleEndorsement) &&
-			tpmData.Parent != int(tpm2.HandlePlatform) {
+			tpmData.Parent != int(tpm3.HandleOwner) &&
+			tpmData.Parent != int(tpm3.HandleNull) &&
+			tpmData.Parent != int(tpm3.HandleEndorsement) &&
+			tpmData.Parent != int(tpm3.HandlePlatform) {
 			return nil, "", errors.New("invalid parent for TPMv2 key")
 		}
 		if len(tpmData.Pubkey) < 2 ||
@@ -409,7 +411,7 @@ func GetTPMv2Signer(opts GetTPMv2SignerOpts) (signer Signer, signingAlgorithm st
 			return nil, "", errors.New("invalid length for TPMv2 PUBLIC blob")
 		}
 
-		public, err = tpm2.DecodePublic(tpmData.Pubkey[2:])
+		public, err = tpm3.DecodePublic(tpmData.Pubkey[2:])
 		if err != nil {
 			return nil, "", err
 		}
@@ -422,9 +424,9 @@ func GetTPMv2Signer(opts GetTPMv2SignerOpts) (signer Signer, signingAlgorithm st
 	}
 
 	switch public.Type {
-	case tpm2.AlgRSA:
+	case tpm3.AlgRSA:
 		signingAlgorithm = aws4X509RsaSha256
-	case tpm2.AlgECC:
+	case tpm3.AlgECC:
 		signingAlgorithm = aws4X509EcdsaSha256
 	default:
 		return nil, "", errors.New("unsupported TPMv2 key type")

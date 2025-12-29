@@ -1,9 +1,10 @@
 package aws_signing_helper
 
 import (
-	tpm2 "github.com/google/go-tpm/tpm2"
 	"io"
 	"os"
+
+	tpm3 "github.com/google/go-tpm/legacy/tpm2"
 )
 
 func openTPM() (io.ReadWriteCloser, error) {
@@ -12,5 +13,5 @@ func openTPM() (io.ReadWriteCloser, error) {
 	if tpmdev != "" {
 		paths = append(paths, tpmdev)
 	}
-	return tpm2.OpenTPM(paths...)
+	return tpm3.OpenTPM(paths...)
 }
