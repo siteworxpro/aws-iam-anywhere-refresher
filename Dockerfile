@@ -1,4 +1,4 @@
-FROM siteworxpro/golang:1.25.3 AS build
+FROM siteworxpro/golang:1.26.2 AS build
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ ENV GOPRIVATE=git.siteworxpro.com
 
 RUN go mod tidy && go build -o aws-iam-anywhere-refresher .
 
-FROM siteworxpro/alpine:3.21.4 AS runtime
+FROM siteworxpro/alpine:3.23.4 AS runtime
 
 WORKDIR /app
 

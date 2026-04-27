@@ -22,7 +22,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/aws/aws-sdk-go/aws/request"
 )
 
 const TestCredentialsFilePath = "/tmp/credentials"
@@ -134,8 +133,7 @@ func TestBuildAuthorizationHeader(t *testing.T) {
 	certificate1 := certificateList1[0]
 	pkPath := "../tst/certs/rsa-2048-key.pem"
 
-	awsRequest := request.Request{HTTPRequest: testRequest}
-	signer, signingAlgorithm, err := GetFileSystemSigner(pkPath, "", path, false)
+	signer, signingAlgorithm, err := GetFileSystemSigner(pkPath, "", path, false, "")
 	if err != nil {
 		t.Log(err)
 		t.Fail()
@@ -160,8 +158,7 @@ func TestBuildAuthorizationHeader(t *testing.T) {
 			t.Fail()
 		}
 	}
-	requestSignFunction := CreateRequestSignFunction(signer, signingAlgorithm, certificate, certificateChain)
-	requestSignFunction(&awsRequest)
+	signRequest(signer, "us-west-2", signingAlgorithm, certificate, certificateChain, testRequest, "")
 
 	certificateList2, _ := ReadCertificateBundleData("../tst/certs/rsa-2048-2-sha256-cert.pem")
 	certificate2 := certificateList2[0]
@@ -189,8 +186,7 @@ func TestBuildAuthorizationHeader(t *testing.T) {
 	}
 	os.Rename("../tst/certs/rsa-2048-sha256-cert.pem", "../tst/certs/rsa-2048-2-sha256-cert.pem")
 	os.Rename("../tst/certs/rsa-2048-sha256-cert.pem.bak", "../tst/certs/rsa-2048-sha256-cert.pem")
-	requestSignFunction2 := CreateRequestSignFunction(signer, signingAlgorithm, certificate, certificateChain)
-	requestSignFunction2(&awsRequest)
+	signRequest(signer, "us-west-2", signingAlgorithm, certificate, certificateChain, testRequest, "")
 }
 
 // Verify that the provided payload was signed correctly with the provided options.
